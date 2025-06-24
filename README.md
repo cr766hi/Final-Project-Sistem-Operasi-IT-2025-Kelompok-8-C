@@ -16,10 +16,10 @@
 
 Nama | NRP
 --- | ---
-... | 5027241xxx
-... | 5027241xxx
-... | 5027241xxx
-... | 5027241xxx
+Christiano Ronaldo Silalahi | 5027241025
+Bayu Kurniawan | 5027241055
+Ahmad Syauqi Reza | 5027241085
+Adinda Cahya Pramesti | 5027241117
 
 ## Deskripsi Soal
 
