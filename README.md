@@ -33,7 +33,7 @@ Buatlah sebuah program FUSE yang dapat mount sebuah directory dan melakukan filt
 Struktur repository:
 ```
 .
-..
+|_ fuse_filter.c
 ```
 
 ## Pengerjaan
