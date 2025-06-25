@@ -22,6 +22,20 @@ Bayu Kurniawan | 5027241055
 Ahmad Syauqi Reza | 5027241085
 Adinda Cahya Pramesti | 5027241117
 
+
+## Pengertian FUSE
+FUSE (Filesystem in Userspace) merupakan antarmuka yang memungkinkan pengembang membuat sistem berkasnya sendiri di ruang pengguna (userspace) pada sistem operasi Linux.
+Salah satu keunggulan utama FUSE adalah kemampuannya untuk membangun sistem berkas tanpa perlu memahami secara mendalam mekanisme internal sistem berkas di kernel space. Hal ini dimungkinkan berkat modul FUSE yang berperan sebagai jembatan antara kode sistem berkas di ruang pengguna dengan kernel.
+
+Adapun beberapa keuntungan lain dari penggunaan FUSE antara lain:
+
+- Dapat dijalankan dan mounting dilakukan oleh pengguna non-root, sangat berguna untuk akses file melalui jaringan, file arsip, media eksternal, dan lainnya.
+
+- Jika terjadi crash pada sistem berkas berbasis FUSE, hal tersebut tidak akan memengaruhi stabilitas kernel.
+
+- Proses implementasi dan penyebaran (deployment) relatif cepat karena tidak memerlukan intervensi administrator sistem dan dapat langsung diakses oleh sistem operasi yang kompatibel.
+
+- Tidak terdapat hambatan lisensi yang berkaitan dengan keterikatan langsung terhadap kode kernel secara statis.
 ## Deskripsi Soal
 
 FUSE - File filtering
@@ -125,6 +139,8 @@ https://github.com/user-attachments/assets/f372bd60-c120-48d6-a73d-a9d8d0de0c2a
 
 - Saxe, J., & Berlin, K. (2017). eXpose: A character‑level convolutional neural network with embeddings for detecting malicious URLs, file paths and registry keys. arXiv.
 
-- Šrndić, N., & Laskov, P. (2016). Hidost: a static machine‑learning‑based detector of malicious files. EURASIP Journal on Information Security, 2016, Article 22. 
+- Šrndić, N., & Laskov, P. (2016). Hidost: a static machine‑learning‑based detector of malicious files. EURASIP Journal on Information Security, 2016, Article 22.
+  
+- https://github.com/lab-kcks/Modul-Sisop/tree/main/Modul-4#file-system-in-userspace-fuse
 
 
