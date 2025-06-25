@@ -29,7 +29,7 @@ Buatlah sebuah program FUSE yang dapat mount sebuah directory dan melakukan filt
 
 
 ### Catatan
-
+-
 
 Struktur repository:
 ```
@@ -39,157 +39,78 @@ Struktur repository:
 
 ## Pengerjaan
 
->Poin 1: Membuat kode operasi FUSE
+### 1. Men-mount direktori sumber ke mount point.
 
 **Teori**
 
-...
+FUSE (Filesystem in Userspace) memungkinkan proses non-privilege membuat filesystem baru dengan menjalankan kode di userspace—kernel hanya bertindak sebagai jembatan
 
 **Solusi**
-```c
-#define FUSE_USE_VERSION 31
-#include <fuse3/fuse.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/stat.h>
 
-static const char *source_dir = "/home/aldo/fpsisop"; //ganti sesuai path yang mau dijadikan fuse
+Pada kode:
 
-static int xmp_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
-    (void) fi;
-    int res;
-    char fpath[PATH_MAX];
-    fullpath(fpath, path);
-    res = lstat(fpath, stbuf);
-    if (res == -1)
-        return -errno;
-    return 0;
-}
-
-
-static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                       off_t offset, struct fuse_file_info *fi,
-                       enum fuse_readdir_flags flags) {
-    (void) offset;
-    (void) fi;
-    (void) flags;
-
-    char fpath[PATH_MAX];
-    fullpath(fpath, path);
-    DIR *dp;
-    struct dirent *de;
-
-    dp = opendir(fpath);
-    if (dp == NULL)
-        return -errno;
-
-    while ((de = readdir(dp)) != NULL) {
-        if (is_malicious(de->d_name)) continue; // ← bagian filter digunakan di dalam FUSE op
-
-        struct stat st = {0};
-        st.st_ino = de->d_ino;
-        st.st_mode = de->d_type << 12;
-        if (filler(buf, de->d_name, &st, 0, 0))
-            break;
-    }
-
-    closedir(dp);
-    return 0;
-}
-
-static int xmp_open(const char *path, struct fuse_file_info *fi) {
-    int res;
-    char fpath[PATH_MAX];
-    fullpath(fpath, path);
-
-    res = open(fpath, fi->flags);
-    if (res == -1)
-        return -errno;
-
-    close(res);
-    return 0;
-}
-
-static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
-                    struct fuse_file_info *fi) {
-    int fd;
-    int res;
-    char fpath[PATH_MAX];
-    fullpath(fpath, path);
-
-    fd = open(fpath, O_RDONLY);
-    if (fd == -1)
-        return -errno;
-
-    res = pread(fd, buf, size, offset);
-    if (res == -1)
-        res = -errno;
-
-    close(fd);
-    return res;
-}
-
-
-static const struct fuse_operations xmp_oper = {
-    .getattr = xmp_getattr,
-    .readdir = xmp_readdir,
-    .open = xmp_open,
-    .read = xmp_read,
-};
 ```
+static const char *source_dir = "/home/aldo/fpsisop";
+...
+int main(int argc, char *argv[]) {
+    delete_malicious_files(source_dir);
+    return fuse_main(argc, argv, &xmp_oper, NULL);
+}
+```
+- `fuse_main` mem-mount direktori sesuai argumen `CLI` `(mis. mount_dir)` dan mendaftarkan callback `(xmp_oper)`.
 
+- Empat operasi minimum di-implementasi `(getattr, readdir, open, read)` agar filesystem dapat di-browse dan membaca berkas.
 
-> Poin 2: Membuat Kode Filter dile berbahaya
+### 2. Menyaring nama berkas berbahaya ketika listing.
 
 **Teori**
 
-...
+`readdir` pada FUSE dipanggil setiap kali program `(mis. ls)` membaca isi direktori. Dengan melewatkan entri tertentu, kita dapat “menyembunyikan” berkas tanpa mengubah disk.
 
 **Solusi**
-```c
+
+Fungsi `is_malicious` menggunakan strstr untuk mendeteksi substring “virus” atau “trojan”. Pada `xmp_readdir`, sebelum setiap entri dimasukkan dengan filler, dilakukan pengecekan:
+
+```
 int is_malicious(const char *name) {
     return strstr(name, "virus") || strstr(name, "trojan");
-}
+}if (is_malicious(de->d_name)) continue;
+ ```
 
-void delete_malicious_files(const char *dirpath) {
-    DIR *dp;
-    struct dirent *entry;
+Hasilnya, pengguna tidak akan melihat file yang diblokir pada direktori mount point.
 
-    dp = opendir(dirpath);
-    if (dp == NULL) {
-        perror("opendir");
-        return;
-    }
+### 3. Menghapus berkas berbahaya sebelum filesystem aktif.
 
-    while ((entry = readdir(dp)) != NULL) {
-        if (entry->d_type == DT_REG) {
-            if (is_malicious(entry->d_name)) {
-                char filepath[1024];
-                snprintf(filepath, sizeof(filepath), "%s/%s", dirpath, entry->d_name);
-                if (unlink(filepath) == 0) {
-                    printf("Deleted: %s\n", filepath);
-                } else {
-                    perror("unlink");
-                }
-            }
-        }
-    }
-    closedir(dp);
-}
+**Teori**
 
-int main(int argc, char *argv[]) {
-    delete_malicious_files(source_dir); // ← Pemanggilan fungsi filter
-    return fuse_main(argc, argv, &xmp_oper, NULL);
+Praktik keamanan proaktif kerap menghapus artefak yang terdeteksi malware sebelum bisa diakses. Menghapus saat pre-mount menghindari konsumsi ruang disk dan risiko eksekusi 
+documentation.suse.com
+.
+
+**Solusi**
+
+
+`delete_malicious_files` dijalankan di awal main. Ia:
+
+Membuka direktori sumber dengan opendir.
+
+Menelusuri entri reguler `(d_type == DT_REG)`.
+
+Apabila nama berkas mengandung pola berbahaya → unlink, lalu menuliskan log Deleted: `<path>`.
+
+Dengan begitu, berkas sudah terhapus sebelum FUSE mulai menerima permintaan I/O.
 
 ```
-
-
-**Video Menjalankan Program**
-
+void delete_malicious_files(const char *dirpath) {
+    ...
+    if (is_malicious(entry->d_name)) {
+        snprintf(filepath, sizeof(filepath), "%s/%s", dirpath, entry->d_name);
+        if (unlink(filepath) == 0) {
+            printf("Deleted: %s\n", filepath);
+        }
+    }
+}
+```
 
 https://github.com/user-attachments/assets/f372bd60-c120-48d6-a73d-a9d8d0de0c2a
 
@@ -198,6 +119,12 @@ https://github.com/user-attachments/assets/f372bd60-c120-48d6-a73d-a9d8d0de0c2a
 
 ## Daftar Pustaka
 
-Sitasi 1
-Sitasi 2
-Sitasi 3
+- von der Assen, J., Feng, C., Huertas Celdrán, A., Oleš, R., Bovet, G., & Stiller, B. (2024). GuardFS: a File System for Integrated Detection and Mitigation of Linux‑based Ransomware [Preprint]. arXiv.
+
+- Bloem, M., Alpcan, T., & Basar, T. (2009). A robust control framework for malware filtering.
+
+- Saxe, J., & Berlin, K. (2017). eXpose: A character‑level convolutional neural network with embeddings for detecting malicious URLs, file paths and registry keys. arXiv.
+
+- Šrndić, N., & Laskov, P. (2016). Hidost: a static machine‑learning‑based detector of malicious files. EURASIP Journal on Information Security, 2016, Article 22. 
+
+
