@@ -43,8 +43,6 @@ Buatlah sebuah program FUSE yang dapat mount sebuah directory dan melakukan filt
 
 
 ### Catatan
--
-
 Struktur repository:
 ```
 .
