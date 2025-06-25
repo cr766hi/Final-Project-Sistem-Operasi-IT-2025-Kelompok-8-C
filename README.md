@@ -12,7 +12,8 @@
 9. Jika ditemukan indikasi kecurangan dalam bentuk apapun di pengerjaan soal final project, maka nilai dianggap 0.
 10. Pengerjaan soal final project sesuai dengan modul yang telah diajarkan.
 
-## Kelompok x
+## Kelompok C08
+
 
 Nama | NRP
 --- | ---
